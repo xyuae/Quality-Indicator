@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'attendance.prof',
     'attendance.student',
+    'attendance.do',
     'django_extensions',
 ]
 

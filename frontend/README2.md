@@ -20,3 +20,37 @@
 把控制层剥离了业务逻辑处理。
 不管服务端还是前端宏观流程都是输入数据，数据处理，输出数据，但是服务端要把心思花在数据处理上，前端要更多关心的是输入输出数据时候的用户体验操作，服务端开发最大的问题就是违背MVC原则，代码编写的随意性，而前端不管出于安全还是性能考虑，最好是尽量少牵涉业务。前端和后端通讯层的独立，会将前后端进行真正的解耦。
 
+
+## web application
+我们不相忘接触到TCP连接、http原始请求和响应那个格式，所以需要一个统一的接口，让我们专心用python编写web业务。这个接口就是wsgi: web server gateway interface
+### MVC Design Pattern
+MVC 就是把web应用分为模型（M），控制器（C），试图（V）三层；他们之间以一种插件似的，松耦合的方式连接在一起。
+模型负责业务对象与数据库的对象（ORM），视图负责域用户的交互，控制器（C）接受用户的输入调用模型和视图完成用户的请求。
+Django的MTV模式本质上与MVC模式没有什么差别，也是各组件之间为了保持松耦合关系，只是定义上有些许不同， Django的MTV分别代表：
+Model（模型）：负责业务对象与数据库的对象（ORM）
+Template（模板）：负责如何把页面展示给用户
+View（视图）：负责业务逻辑，斌在适当的时候调用Model和Template
+此外，Django还有一个url分发器，他的作用是将一个个url的页面请求分发给不同的view处理，view再调用相应的Model和Template.
+
+## Flask， Django， Pyramid的比较
+他们是微框架和商业级web服务的典范
+Flask是一个微框架，主要面向需求简单的小应用。Pyramid和Django都是面向大的应用，但是在扩展性和灵活性上走了不同的路。Pyramid关注灵活性，让开发者选择合适的工具来开发项目。这意味着开发者可以选择数据库，URL结构，模板风格等。Django的目标是提供web应用开发的一站式解决方案，所以相应的模块也比较多。
+Django的一站式解决的思路能让开发者不用再开发之前就花大量时间在选择应用的基础设置上。
+尽管Flask的历史较短，但它能够从以前的框架学到一些东西并且将他的目标设定在了小型项目上。他在一些仅有一两个功能的小型项目上得到了大量应用。比如httpbin这样的项目，简单但非常强大，是一个帮助debug和测试http的库。
+
+Pyramid
+跟Flask类似，Pyramid支持很多模板语言（包括Jinja2和Mako)，但他有一个默认的模板。Pyramid使用Chameleon,一个ZPT（the Zope Page Template)语言的实现。我们来看一个例子，把用户的名字添加到网站顶端。相应的Python代码有点类似但更加明确，不用调用render_template函数。
+'''
+@view_config(render='templates/home.pt')
+def my_view(request):
+	# do stuff ...
+	return {'user': user}
+'''
+## 框架实战
+做一个社交网络，可以告诉整个因特网你晚饭吃了什么。这个应用回事一个简单的接口，能让用户po出他们午饭吃了什么，还可以看到别人吃了什么。
+flask
+首先，我们需要初始化我们的应用和引入orm.
+'''
+from flask import Flask
+
+'''
