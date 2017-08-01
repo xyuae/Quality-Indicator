@@ -4,8 +4,8 @@ from django.http import HttpResponse, HttpResponseBadRequest
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.gis.geoip2 import GeoIP2
-from attendance.student.models import Attendance
-from attendance.prof.models import Attendance as ProfAttendance
+from .models import Attendance
+from ..prof.models import Attendance as ProfAttendance
 from math import cos, asin, sqrt
 
 

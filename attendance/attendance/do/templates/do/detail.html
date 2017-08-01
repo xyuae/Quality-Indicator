@@ -1,0 +1,13 @@
+<h1>{{question.proj_name}}</h1>
+
+{% if error_message %} <p><strong>{{error_message}}</strong></p>{% endif %}
+
+<form action="{ url 'do:vote' question.id %}" method="post">
+    {% crsf_token %}
+    {% for choice in question.
+</form>
+<ul>
+    <li>Created date: {{question.pub_date}}</li>
+    <li>Update date: {{question.update_date}}</li>
+</ul>
+
