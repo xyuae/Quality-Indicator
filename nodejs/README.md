@@ -222,3 +222,138 @@ exports.route = route;
 ```
 通过以上代码，我们首先检查给定的路径对应的请求处理程序是否存在。
 我们可以从关联数组中获取元素一样的方式从传递的对象中获取请求处理函数。
+
+## Get Response from the handler
+We want the handler to return something meaningful rather than "Hello World"
+We want our handler to be able to communicate with the browser like onRequest
+### A bad way to do it
+For those having PHP and Ruby experience, the straightforward way to do it is not very reliable.
+The staright-forward way is to let handler to return the information to the user through onRequest.
+
+THe problem is when the handler need to do unblocking execution, our application is down
+
+## Blocking and non-blocking request
+What will happen when handler meets blocking request
+
+In the node everything runs concurrently except the code.
+This means Node.js can deal with tasks without adding new thread -- Node.js is single thread.
+ It execute operation using event loop. Thus we must make good use of it -- avoid blocking operation as much as we can.
+ Put it in another way, perform non-blocking operation as much as possible.
+
+However, to perform non-blocking operation, we need recall. 通过将函数作为参数传递给其他需要花时间做处理的函数。
+- [Understanding the Node.js Event Loop](./EventLoop.md)
+- [Understanding the Node.js Mixu](./EventLoop2.md)
+```
+var exec = require("child_process").exec;
+
+function start() {
+    console.log("Request handler 'start' was called.");
+    var content = "empty"
+    exec("find /", function (error, stdout, stderr){
+        content = stdout;
+    });
+    return content;
+}
+
+function upload() {
+    console.log("Request handler 'upload' was called.");
+    return "Hello Upload"
+}
+
+exports.start = start;
+exports.upload = upload;
+```
+This code snippet doesn't work because to execute non-blocking operatin, exec() uses recall function.
+In our example, this recall function is the second parameter passed into exec()
+```
+function (error, stdout, stderr) {
+    content = stdout;
+}
+```
+Problem: 我们的代码是同步执行的，这就意味着在调用exec()之后，
+Node会立即执行return content; 在这个时候，content仍然是"empty"，因为传递给exec()的回调函数还未执行到
+： 因为exec()的操作是异步的。
+
+### Request response with non-blocking method
+Node有这样一种实现方案：函数传递。
+到目前位置，我们的应用已经可以通过应用各层之间传递的方式（请求处理程序，请求路由
+，服务器）将请求处理程序返回的内容传递给http服务器。
+现在我们采用如下这种新的实现方式：相对采用将内容传递给服务器的方式，我们这次采用将服务器“传递”给内容的方式。
+从时间角度说，这就是将response对象（从服务器的回调函数onRequest()获取）通过路由
+传递给请求处理程序。处理程序就可以采用该对象上的函数来对请求作出响应。
+
+我们的处理程序函数需要接受response参数，为了对请求作出直接的响应。
+start处理程序在exec()的anoymous回调函数中做请求响应的操作。而upload处理程序
+仍然是简单的回复，只是这次是使用response对象而已。
+
+## Deal with POST request
+我们显示一个文本区（textarea）供用户输入内容，然后通过POST请求
+提交给服务器。最后，服务器接受到请求，通过处理程序将输入的内容展示到阅览器中。
+
+problem: 当用户提交表单时，出发/upload请求处理程序处理post请求的问题。
+采用异步回调来实现非阻塞地处理post请求的数据。
+post请求比较重，用户可能会输入大量的内容。用阻塞的方式处理大数据量的请求必然会导致用户操作的阻塞。
+
+为了使整个过程非阻塞，node.js会将post数据拆分成很多小的数据块，
+然后通过触发特定的事件，将这些小数据块传递给回调函数。这里的特定事件有data事件(表示新的小数据块到达了），以及end事件（表示
+所有的数据已经接收完毕）。
+
+我们需要告诉node.js当这些事件触发的时候，回调哪些函数。怎么告诉呢？我们通过在reqest对象上注册listener来实现。
+这里的request对象是每次接收到HTTP请求的时候，都会把该对象传递给onRequest回调函数。
+```
+request.addListener("data", function(chunk) {
+    // called when a new chunk of data was received
+});
+
+
+request.addListener("end", function() {
+    // called when all chunk of data have been received
+});
+```
+我们并没有象之前response对象那样，把request对象传递给请求路由和请求处理程序。
+获取所有来自请求的数据，然后将这些数据给应用层处理，应该是http服务器要做的事情。
+因此，建议直接在服务器中处理POST数据，然后将最终的数据传递给请求路由和请求处理器，让他们来进行进一步的处理。
+因此，实现思路就是：将data和end事件的回调函数直接放在服务器中，在data事件回调中收集所有的POST数据，当接收到所有数据，
+触发end事件后，其回调函数调用请求路由，并将数据传递给它，然后，请求路由再将该数据传递给请求处理程序。
+```
+var http = require("http");
+var url = require("url");
+// 接下来用http.createServer() 方法创建服务器，并使用Listen方法绑定8888端口。函数通过request, response参数来接受和响应数据。
+function start(route, handle) {
+    function onRequest(request, response) {
+        var postData = "";
+        var pathname = url.parse(request.url).pathname;
+        console.log("Request for" + pathname + " received.");
+
+        request.setEncoding("utf8");
+
+        request.addListener("data", function(postDataChunk) {
+            postData += postDataChunk;
+            console.log("Received POST data chunk '"+
+            postDataChunk + "'.");
+        });
+
+        request.addListener("end", function() {
+            route(handle, pathname, response, postData);
+        });
+    }
+    http.createServer(onRequest).listen(3333);
+    // 终端打印如下信息：
+    console.log('Server running at http://127.0.0.1:3333/');
+}
+
+exports.start = start;
+```
+上述代码做了三件事情：首先，我们设置了接收数据的编码格式为UTF-8，然后注册了"data"事件的监听器，
+用于手机每次接收到的新数据模块，并将其赋值给postData变量。最后，我们将请求路由的
+调用移到end事件处理程序中，以确保它只会当所有数据接收完毕后才触发，并且只触发一次。
+我们同时还把POST数据传递给请求路由，因为这些数据，请求处理程序会用到。
+
+我们接下来再/upload页面，展示用户输入的内容。要实现该功能，我们需要将postData传递
+给请求处理程序
+
+当前我们是把请求的整个消息体传递给了请求路由和请求处理程序。
+我们应该只把post数据中， 我们感兴趣的部分传递给请求路由和请求处理程序。
+在我们这个例子中我们感兴趣的只是text字段。
+可以用querystring模块来实现：
+
