@@ -13,7 +13,7 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AlterField(
-            model_name='attendance',
+            model_name='Indicator',
             name='class_code',
             field=models.CharField(max_length=4, unique=True),
         ),

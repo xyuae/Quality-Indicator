@@ -1,4 +1,4 @@
-"""attendance URL Configuration
+"""backend URL Configuration
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/1.10/topics/http/urls/
@@ -15,15 +15,15 @@ Including another URLconf
 """
 from django.conf.urls import include, url
 from django.contrib import admin
-from attendance import views
+from . import views
 
 urlpatterns = [
     url(r'^prof/$', views.index, name='index'),
     url(r'^student/$', views.index, name='index'),
     #url(r'^do/$', views.index, name='index'),
-    url(r'^prof/', include('attendance.prof.urls')),
-    url(r'^student/', include('attendance.student.urls')),
-    url(r'^do/', include('attendance.do.urls')),
+    url(r'^prof/', include('Indicator.prof.urls')),
+    url(r'^student/', include('Indicator.student.urls')),
+    url(r'^do/', include('Indicator.do.urls')),
     url(r'^admin/', admin.site.urls),
     url(r'^$', views.index, name='index'),
 ]

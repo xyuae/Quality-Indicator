@@ -357,3 +357,11 @@ exports.start = start;
 在我们这个例子中我们感兴趣的只是text字段。
 可以用querystring模块来实现：
 
+## formidable模块
+这里该模块做得就是通过http post请求提交的表单，
+在node.js中可以被解析。我们要做的就是创建一个
+新的incomingForm，踏实对提交表单的抽象表示，之后，就可以用它解析request对象，
+获取表单中需要的数据字段。
+
+我们需要考虑如何将上传文件的内容（保存在/tmp目录中）显示到阅览器中。
+

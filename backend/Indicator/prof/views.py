@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.http import HttpResponse, HttpResponseBadRequest
-from attendance.prof.models import Attendance
-from attendance.student.models import Attendance as StudentAttendance
+from .models import Attendance
+from ..student.models import Attendance as StudentAttendance
 from django.contrib.gis.geoip2 import GeoIP2
 from django.views.decorators.http import require_POST
 from django.views.decorators.http import require_GET
